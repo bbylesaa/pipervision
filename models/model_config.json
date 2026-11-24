@@ -1,0 +1,9 @@
+{
+  "model_name": "ResNet50",
+  "class_names": ["Sirih Cina", "Sirih Hijau", "Sirih Jawa"],
+  "input_size": [224, 224],
+  "preprocessing": "raw_0_255",
+  "interpolation": "nearest",
+  "config_verified": true,
+  "notes": "Diperbarui berdasarkan kode training pengguna: ImageDataGenerator tanpa rescale/preprocessing_function (piksel mentah 0-255), flow_from_directory target_size 224x224 (interpolasi default nearest), class_indices {sirihcina:0, sirihhijau:1, sirihjawa:2}. Belum diuji pada foto berlabel; set config_verified=true setelah verifikasi."
+}

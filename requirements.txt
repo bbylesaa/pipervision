@@ -1,0 +1,10 @@
+# Dependensi RINGAN untuk hosting gratis (tanpa TensorFlow penuh).
+# Dipakai bersama models/resnet50.tflite. Ganti namanya menjadi requirements.txt di folder deploy.
+fastapi==0.115.6
+uvicorn==0.34.0
+python-multipart==0.0.20
+pillow==11.1.0
+numpy<2
+ai-edge-litert
+# Jika "ai-edge-litert" gagal terpasang di host, coba ganti dengan baris berikut (runtime lama):
+# tflite-runtime

@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PiperVision · Klasifikasi Daun Sirih dengan AI</title>
+  <meta name="description" content="PiperVision mengklasifikasikan jenis daun sirih dari foto menggunakan model deep learning ResNet50.">
+  <meta name="theme-color" content="#14382b">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3C9 9 6 15 8 22c2 5 6 7 8 7s6-2 8-7c2-7-1-13-8-19z' fill='%232e7d4f'/%3E%3Cpath d='M16 7v20M16 13l-5 4M16 18l5 4' stroke='white' stroke-width='1.6' fill='none'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Lewati ke konten</a>
+
+<header class="site-header">
+  <a class="brand" href="#/" aria-label="PiperVision, beranda">
+    <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3C9 9 6 15 8 22c2 5 6 7 8 7s6-2 8-7c2-7-1-13-8-19z" fill="currentColor"/><path d="M16 7v20M16 13l-5 4M16 18l5 4" stroke="#fff" stroke-width="1.6" fill="none"/></svg>
+    PiperVision
+  </a>
+  <button class="nav-toggle" aria-expanded="false" aria-controls="nav" id="navToggle">Menu</button>
+  <nav id="nav" aria-label="Navigasi utama">
+    <a href="#/" data-route="home">Beranda</a>
+    <a href="#/klasifikasi" data-route="klasifikasi">Klasifikasi</a>
+    <a href="#/riwayat" data-route="riwayat">Riwayat</a>
+    <a href="#/jenis" data-route="jenis">Jenis sirih</a>
+    <a href="#/tentang" data-route="tentang">Tentang</a>
+  </nav>
+</header>
+
+<div id="modelBanner" class="banner" hidden role="status"></div>
+
+<main id="main" tabindex="-1">
+
+  <!-- BERANDA -->
+  <section data-page="home" class="page">
+    <div class="hero">
+      <div class="hero-copy">
+        <h1>Kenali jenis daun sirih dari satu foto.</h1>
+        <p class="lead">PiperVision membandingkan foto daun Anda dengan pola yang dipelajari model deep learning ResNet50, lalu menampilkan peluang untuk setiap jenis. Hasilnya adalah perkiraan, bukan kepastian.</p>
+        <p><a class="btn btn-primary" href="#/klasifikasi">Klasifikasi daun sekarang</a> <a class="btn btn-ghost" href="#/tentang">Cara kerja sistem</a></p>
+      </div>
+      <svg class="vein" viewBox="0 0 320 380" aria-hidden="true">
+        <path class="leaf" d="M160 12C70 80 26 170 52 268c24 70 80 100 108 100s84-30 108-100c26-98-18-188-108-256z"/>
+        <g class="veins"><path d="M160 30V362"/><path d="M160 110L84 170M160 110l76 60M160 180L70 250M160 180l90 70M160 250L100 305M160 250l60 55"/></g>
+      </svg>
+    </div>
+
+    <h2>Cara menggunakan</h2>
+    <ol class="steps">
+      <li><strong>Siapkan foto.</strong> Satu daun, terang, tajam, latar sederhana.</li>
+      <li><strong>Unggah.</strong> Pilih file atau tarik ke area unggah (JPG, PNG, WebP, maks. 5 MB).</li>
+      <li><strong>Baca hasilnya.</strong> Lihat jenis teratas, peluang tiap jenis, dan peringatan bila model ragu.</li>
+    </ol>
+
+    <h2>Jenis yang dikenali</h2>
+    <div id="homeSpecies" class="species-row"></div>
+  </section>
+
+  <!-- KLASIFIKASI -->
+  <section data-page="klasifikasi" class="page" hidden>
+    <h1>Klasifikasi daun</h1>
+    <div class="classify">
+      <div>
+        <div id="drop" class="drop" tabindex="0" role="button" aria-label="Pilih atau tarik foto daun sirih ke sini">
+          <div id="dropEmpty">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 16V4m0 0L7 9m5-5l5 5M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+            <p><strong>Tarik foto ke sini</strong> atau klik untuk memilih</p>
+            <p class="muted small">JPG, PNG, WebP · maks. 5 MB</p>
+          </div>
+          <img id="preview" alt="Pratinjau foto yang akan diklasifikasi" hidden>
+        </div>
+        <input id="file" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+        <p id="fileError" class="error" role="alert" hidden></p>
+
+        <fieldset class="consent">
+          <legend>Penyimpanan riwayat (hanya di perangkat ini)</legend>
+          <label><input type="checkbox" id="optSave" checked> Simpan hasil di riwayat perangkat ini</label>
+          <label><input type="checkbox" id="optThumb"> Sertakan gambar mini (160 px) di riwayat</label>
+          <p class="muted small">Foto Anda dikirim ke server hanya untuk dianalisis dan <strong>tidak disimpan</strong> di server. Riwayat tidak dikirim ke mana pun.</p>
+        </fieldset>
+
+        <p class="row">
+          <button id="btnPredict" class="btn btn-primary" disabled>Prediksi</button>
+          <button id="btnReset" class="btn btn-ghost" hidden>Ganti foto</button>
+        </p>
+      </div>
+
+      <div id="resultPane" aria-live="polite">
+        <div id="resultEmpty" class="empty"><p>Hasil akan muncul di sini setelah Anda memilih foto dan menekan <em>Prediksi</em>.</p></div>
+        <div id="loading" class="empty" hidden><div class="spinner" aria-hidden="true"></div><p>Model sedang menganalisis foto…</p><p class="muted small" id="loadingHint"></p></div>
+        <div id="errorBox" class="error-box" hidden role="alert"></div>
+        <article id="result" hidden>
+          <p id="resultStatus" class="badge"></p>
+          <h2 id="resName"></h2>
+          <p class="conf"><span id="resConf"></span> keyakinan model</p>
+          <div id="warnings"></div>
+          <h3>Peluang tiap jenis</h3>
+          <div id="bars" class="bars"></div>
+          <h3>Penjelasan</h3>
+          <p id="resExplain"></p>
+          <p class="muted small" id="resMeta"></p>
+          <p class="disclaimer">Keyakinan model bukan jaminan kebenaran. Model dapat salah, dan dapat tetap yakin pada foto yang bukan daun sirih. Gunakan hasil ini sebagai bantuan, bukan identifikasi final.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- RIWAYAT -->
+  <section data-page="riwayat" class="page" hidden>
+    <div class="row between"><h1>Riwayat klasifikasi</h1><button id="btnClearAll" class="btn btn-danger">Hapus semua</button></div>
+    <p class="muted">Tersimpan di perangkat dan browser ini saja. Menghapus data browser akan menghapus riwayat.</p>
+    <div id="historyList" class="history"></div>
+    <dialog id="detail"><div id="detailBody"></div><form method="dialog"><button class="btn btn-primary">Tutup</button></form></dialog>
+  </section>
+
+  <!-- JENIS -->
+  <section data-page="jenis" class="page" hidden>
+    <h1>Informasi jenis sirih</h1>
+    <p class="muted">Ringkasan umum, bukan acuan botani resmi. Daftar jenis mengikuti kelas pada model yang aktif.</p>
+    <div id="speciesList" class="species-col"></div>
+  </section>
+
+  <!-- TENTANG -->
+  <section data-page="tentang" class="page prose" hidden>
+    <h1>Tentang sistem</h1>
+    <h2>Masalah yang diselesaikan</h2>
+    <p>Membedakan jenis daun sirih secara visual membutuhkan pengalaman. Proyek ini menguji apakah convolutional neural network (CNN) dapat mengklasifikasikan jenis daun sirih dari foto.</p>
+    <h2>Dataset dan preprocessing</h2>
+    <p>Model dilatih pada foto daun yang dikelompokkan per jenis. Setiap foto diubah ukurannya menjadi 224×224 piksel dan dinormalisasi sesuai arsitektur. Pada inferensi, backend menerapkan langkah yang sama. Ukuran, jumlah, dan sumber dataset ada di laporan penelitian Anda; halaman ini tidak mengarang angka.</p>
+    <h2>Arsitektur</h2>
+    <p><strong>ResNet50</strong> memakai koneksi residual agar jaringan dalam tetap stabil dilatih. <strong>EfficientNet</strong> menyeimbangkan kedalaman, lebar, dan resolusi jaringan secara terpadu. Penelitian ini dirancang membandingkan keduanya dengan pembagian data yang sama.</p>
+    <h2>Pemilihan model terbaik</h2>
+    <p>Kriteria: macro F1-score tertinggi, lalu akurasi, lalu waktu inferensi terendah.</p>
+    <h2>Keterbatasan</h2>
+    <ul>
+      <li>Model hanya mengenal kelas yang ada saat training dan tidak punya kelas “bukan daun sirih”.</li>
+      <li>Foto buram, gelap, atau berlatar ramai menurunkan kualitas hasil.</li>
+      <li>Peringatan “tidak meyakinkan” memakai ambang keyakinan, entropi, dan pemeriksaan warna. Ini heuristik, bukan detektor objek asing yang andal.</li>
+    </ul>
+    <h2>Privasi</h2>
+    <p>Foto diproses di memori server dan dibuang setelah prediksi. Riwayat hanya ada di perangkat Anda.</p>
+  </section>
+</main>
+
+<footer class="site-footer"><p>PiperVision · Proyek Data Science klasifikasi daun sirih. Hasil bersifat perkiraan.</p></footer>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
