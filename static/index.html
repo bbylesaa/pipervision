@@ -51,7 +51,7 @@
     <h2>Cara menggunakan</h2>
     <ol class="steps">
       <li><strong>Siapkan foto.</strong> Satu daun, terang, tajam, latar sederhana.</li>
-      <li><strong>Unggah.</strong> Pilih file atau tarik ke area unggah (JPG, PNG, WebP, maks. 5 MB).</li>
+      <li><strong>Unggah.</strong> Pilih file atau tarik ke area unggah (JPG, PNG, WebP, maks. 30 MB).</li>
       <li><strong>Baca hasilnya.</strong> Lihat jenis teratas, peluang tiap jenis, dan peringatan bila model ragu.</li>
     </ol>
 
@@ -68,12 +68,16 @@
           <div id="dropEmpty">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 16V4m0 0L7 9m5-5l5 5M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
             <p><strong>Tarik foto ke sini</strong> atau klik untuk memilih</p>
-            <p class="muted small">JPG, PNG, WebP · maks. 5 MB</p>
+            <p class="muted small">JPG, PNG, WebP · maks. 30 MB</p>
           </div>
           <img id="preview" alt="Pratinjau foto yang akan diklasifikasi" hidden>
         </div>
         <input id="file" type="file" accept="image/jpeg,image/png,image/webp" hidden>
         <p id="fileError" class="error" role="alert" hidden></p>
+
+        <p class="catatan">
+          <strong>Petunjuk:</strong> Gunakan foto satu daun sirih. Aplikasi ini hanya 	mengenali tiga jenis sirih.
+        </p>
 
         <fieldset class="consent">
           <legend>Penyimpanan riwayat (hanya di perangkat ini)</legend>
@@ -102,7 +106,13 @@
           <h3>Penjelasan</h3>
           <p id="resExplain"></p>
           <p class="muted small" id="resMeta"></p>
-          <p class="disclaimer">Keyakinan model bukan jaminan kebenaran. Model dapat salah, dan dapat tetap yakin pada foto yang bukan daun sirih. Gunakan hasil ini sebagai bantuan, bukan identifikasi final.</p>
+          <p class="catatan">
+            <strong>Perlu diketahui:</strong> Model ini hanya punya tiga pilihan: sirih
+            hijau, sirih cina, dan sirih jawa. Tidak ada pilihan "bukan daun sirih",
+            jadi jika foto yang diunggah bukan daun sirih, hasilnya tetap berupa salah
+            satu jenis tersebut dan tidak dapat dipercaya. Hasil ini adalah perkiraan
+            model, bukan identifikasi pasti.
+          </p>
         </article>
       </div>
     </div>
@@ -131,9 +141,7 @@
     <h2>Dataset dan preprocessing</h2>
     <p>Model dilatih pada foto daun yang dikelompokkan per jenis. Setiap foto diubah ukurannya menjadi 224×224 piksel dan dinormalisasi sesuai arsitektur. Pada inferensi, backend menerapkan langkah yang sama. Ukuran, jumlah, dan sumber dataset ada di laporan penelitian Anda; halaman ini tidak mengarang angka.</p>
     <h2>Arsitektur</h2>
-    <p><strong>ResNet50</strong> memakai koneksi residual agar jaringan dalam tetap stabil dilatih. <strong>EfficientNet</strong> menyeimbangkan kedalaman, lebar, dan resolusi jaringan secara terpadu. Penelitian ini dirancang membandingkan keduanya dengan pembagian data yang sama.</p>
-    <h2>Pemilihan model terbaik</h2>
-    <p>Kriteria: macro F1-score tertinggi, lalu akurasi, lalu waktu inferensi terendah.</p>
+    <p><strong>ResNet50</strong> memakai koneksi residual agar jaringan dalam tetap stabil dilatih. Model ini mengklasifikasikan foto ke tiga jenis daun sirih.</p>
     <h2>Keterbatasan</h2>
     <ul>
       <li>Model hanya mengenal kelas yang ada saat training dan tidak punya kelas “bukan daun sirih”.</li>

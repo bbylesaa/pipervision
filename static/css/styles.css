@@ -98,3 +98,5 @@ table{border-collapse:collapse;width:100%;font-size:.93rem}th,td{border:1px soli
 .table-wrap{overflow-x:auto;margin:.6rem 0 1rem}
 .site-footer{border-top:1px solid var(--line);padding:1.5rem clamp(1rem,4vw,3rem);color:var(--muted);font-size:.9rem}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.vein .veins path{stroke-dashoffset:0}}
+
+.catatan{margin:1rem 0;padding:.7rem .95rem;border-left:4px solid #d99a00;background:var(--amber-bg);color:var(--amber);font-size:.9rem;line-height:1.5;border-radius:4px;max-width:68ch}

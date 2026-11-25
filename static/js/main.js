@@ -9,7 +9,8 @@ const el = (tag, props = {}, ...kids) => {
   return n;
 };
 const pct = (x) => (x * 100).toFixed(1).replace(".", ",") + "%";
-const MAX_MB = 5;
+const MAX_RAW_MB = 30;                 // foto asli boleh besar; diperkecil di browser sebelum dikirim
+const SEND_LIMIT = 3.5 * 1024 * 1024;  // hosting membatasi 4,5 MB per permintaan; sisakan ruang
 const OK_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const state = { health: null, file: null };
@@ -87,7 +88,7 @@ function updatePredictButton() {
 }
 function validateFile(f) {
   if (!OK_TYPES.includes(f.type)) return "Format tidak didukung. Gunakan JPG, PNG, atau WebP.";
-  if (f.size > MAX_MB * 1024 * 1024) return `Ukuran file ${(f.size / 1048576).toFixed(1)} MB melebihi batas ${MAX_MB} MB.`;
+  if (f.size > MAX_RAW_MB * 1024 * 1024) return `Ukuran file ${(f.size / 1048576).toFixed(1)} MB melebihi batas ${MAX_RAW_MB} MB.`;
   if (f.size === 0) return "File kosong.";
   return null;
 }
@@ -116,6 +117,36 @@ fileInput.addEventListener("change", () => fileInput.files[0] && setFile(fileInp
 drop.addEventListener("drop", (e) => { const f = e.dataTransfer.files[0]; if (f) setFile(f); });
 $("#btnReset").addEventListener("click", clearFile);
 
+/* ------------------------------------------------------------ perkecil foto besar */
+function loadImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Foto tidak dapat dibaca. Coba foto lain.")); };
+    img.src = url;
+  });
+}
+// Foto <= SEND_LIMIT dikirim apa adanya. Foto lebih besar (umumnya dari kamera HP) diperkecil
+// ke JPEG supaya lolos batas hosting. Orientasi EXIF sudah diterapkan browser saat digambar.
+async function shrinkForUpload(file) {
+  if (file.size <= SEND_LIMIT) return file;
+  const img = await loadImage(file);
+  const longest = Math.max(img.naturalWidth, img.naturalHeight);
+  let maxSide = Math.min(2000, longest), quality = 0.9;
+  for (let i = 0; i < 6; i++) {
+    const scale = Math.min(1, maxSide / longest);
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(img.naturalWidth * scale));
+    c.height = Math.max(1, Math.round(img.naturalHeight * scale));
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    const blob = await new Promise((r) => c.toBlob(r, "image/jpeg", quality));
+    if (blob && blob.size <= SEND_LIMIT)
+      return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" });
+    maxSide = Math.round(maxSide * 0.8); quality = Math.max(0.7, quality - 0.05);
+  }
+  throw new Error("Foto terlalu besar dan tidak dapat diperkecil. Coba foto lain.");
+}
+
 /* ------------------------------------------------------------ predict */
 function resetResult() {
   $("#result").hidden = true; $("#errorBox").hidden = true; $("#loading").hidden = true; $("#resultEmpty").hidden = false;
@@ -127,7 +158,7 @@ $("#btnPredict").addEventListener("click", async () => {
   $("#btnPredict").disabled = true; $("#loadingHint").textContent = "";
   hintTimer = setTimeout(() => ($("#loadingHint").textContent = "Server mungkin sedang bangun. Mohon tunggu sebentar."), 6000);
   try {
-    const r = await predict(state.file);
+    const r = await predict(await shrinkForUpload(state.file));
     showResult(r);
     if ($("#optSave").checked) {
       const thumb = $("#optThumb").checked ? await makeThumbnail(state.file) : null;
@@ -154,8 +185,21 @@ function explain(r) {
     (second ? ` Kemungkinan terdekat berikutnya adalah ${second[0]} (${pct(second[1])}).` : "") + " " + top.summary;
 }
 
+function showNotSirih(r) {
+  const badge = $("#resultStatus");
+  badge.className = "badge uncertain"; badge.textContent = "Bukan daun sirih (atau tidak dikenali)";
+  $("#resName").textContent = "Bukan daun sirih";
+  $("#resConf").textContent = "";
+  $("#warnings").replaceChildren(...(r.warnings || []).map((t) => el("div", { className: "warn", textContent: t })));
+  $("#bars").replaceChildren();
+  $("#resExplain").textContent = "Foto ini tidak mirip dengan foto daun sirih yang dikenal model, sehingga model tidak memberi jenis. " +
+    "Jika ini memang daun sirih, coba foto satu daun dengan latar polos dan cahaya cukup. Deteksi ini perkiraan dan bisa keliru.";
+  $("#resMeta").textContent = `Model: ${r.model_name} · waktu inferensi server ${r.inference_ms} ms`;
+}
+
 function showResult(r) {
   $("#loading").hidden = true; $("#result").hidden = false;
+  if (r.status === "not_sirih") { showNotSirih(r); return; }
   const unc = r.status === "uncertain";
   const badge = $("#resultStatus");
   badge.className = "badge " + (unc ? "uncertain" : "ok");
@@ -182,8 +226,9 @@ function renderHistory() {
   if (!list.length) { box.append(el("div", { className: "empty" }, el("p", { textContent: "Belum ada riwayat. Hasil klasifikasi yang Anda simpan akan muncul di sini." }), el("a", { className: "btn btn-primary", href: "#/klasifikasi", textContent: "Mulai klasifikasi" }))); return; }
   list.forEach((e) => {
     const thumb = e.thumb ? el("img", { className: "h-thumb", src: e.thumb, alt: "Gambar mini" }) : el("div", { className: "h-thumb", textContent: "tanpa gambar" });
-    const info = el("div", {}, el("b", { textContent: e.result.predicted_class }),
-      el("div", { className: "muted small", textContent: `${pct(e.result.confidence)} · ${new Date(e.time).toLocaleString("id-ID")}` }));
+    const ns = e.result.status === "not_sirih";
+    const info = el("div", {}, el("b", { textContent: ns ? "Bukan daun sirih" : e.result.predicted_class }),
+      el("div", { className: "muted small", textContent: `${ns ? "tidak dikenali" : pct(e.result.confidence)} · ${new Date(e.time).toLocaleString("id-ID")}` }));
     const detail = el("button", { className: "btn btn-ghost", textContent: "Detail" });
     detail.addEventListener("click", () => openDetail(e));
     const del = el("button", { className: "btn btn-danger", textContent: "Hapus", ariaLabel: "Hapus entri ini" });
@@ -192,7 +237,7 @@ function renderHistory() {
   });
 }
 function openDetail(e) {
-  const b = $("#detailBody"); b.replaceChildren(el("h2", { textContent: e.result.predicted_class }),
+  const b = $("#detailBody"); b.replaceChildren(el("h2", { textContent: e.result.status === "not_sirih" ? "Bukan daun sirih" : e.result.predicted_class }),
     el("p", { className: "muted", textContent: `${new Date(e.time).toLocaleString("id-ID")} · ${e.result.model_name}` }));
   if (e.thumb) b.append(el("img", { src: e.thumb, alt: "Gambar mini" }));
   b.append(el("table", {}, el("tbody", {}, ...Object.entries(e.result.class_probabilities).sort((a, c) => c[1] - a[1])
